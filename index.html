@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SalesPro • Sistema de Vendas</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            primary: {
+              50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
+              400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
+              800: '#1e40af', 900: '#1e3a8a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .sidebar-transition { transition: width 0.3s ease, transform 0.3s ease; }
+    .card-hover { transition: all 0.2s ease; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1); }
+    .fade-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: #f1f5f9; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+  <div class="flex h-screen overflow-hidden">
+    
+    <!-- ========== SIDEBAR ========== -->
+    <aside id="sidebar" class="sidebar-transition bg-slate-900 text-white w-64 flex-shrink-0 flex flex-col z-30">
+      <!-- Logo -->
+      <div class="h-16 flex items-center px-6 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-primary-500 flex items-center justify-center">
+            <i class="fas fa-chart-line text-white text-lg"></i>
+          </div>
+          <span class="font-bold text-xl tracking-tight">Sales<span class="text-primary-400">Pro</span></span>
+        </div>
+      </div>
+      
+      <!-- Menu -->
+      <nav class="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+        <button onclick="navigate('dashboard')" data-page="dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors bg-primary-600 text-white">
+          <i class="fas fa-home w-5 text-center"></i>
+          <span>Dashboard</span>
+        </button>
+        <button onclick="navigate('clientes')" data-page="clientes" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-slate-300 hover:bg-slate-800 hover:text-white">
+          <i class="fas fa-users w-5 text-center"></i>
+          <span>Clientes</span>
+        </button>
+        <button onclick="navigate('produtos')" data-page="produtos" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-slate-300 hover:bg-slate-800 hover:text-white">
+          <i class="fas fa-box w-5 text-center"></i>
+          <span>Produtos</span>
+        </button>
+        <button onclick="navigate('vendas')" data-page="vendas" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-slate-300 hover:bg-slate-800 hover:text-white">
+          <i class="fas fa-shopping-cart w-5 text-center"></i>
+          <span>Vendas</span>
+        </button>
+      </nav>
+      
+      <!-- User (mock) -->
+      <div class="p-4 border-t border-slate-700">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold">
+            AD
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium truncate">Admin Demo</p>
+            <p class="text-xs text-slate-400 truncate">admin@salespro.com</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      
+      <!-- Top Bar -->
+      <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
+        <div class="flex items-center gap-4">
+          <button id="menuToggle" class="lg:hidden text-slate-600 hover:text-slate-900">
+            <i class="fas fa-bars text-xl"></i>
+          </button>
+          <h1 id="pageTitle" class="text-xl font-semibold text-slate-800">Dashboard</h1>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <div class="relative hidden sm:block">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="text" placeholder="Buscar..." class="pl-10 pr-4 py-2 bg-slate-100 border-0 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none w-64">
+          </div>
+          <button class="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg">
+            <i class="fas fa-bell"></i>
+            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Pages Container -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 scrollbar-thin">
+        
+        <!-- ==================== DASHBOARD ==================== -->
+        <div id="page-dashboard" class="page fade-in space-y-6">
+          
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-slate-500">Faturamento Total</p>
+                  <p class="text-2xl font-bold text-slate-800 mt-1" id="kpi-faturamento">R$ 0</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+                  <i class="fas fa-dollar-sign text-emerald-600 text-xl"></i>
+                </div>
+              </div>
+              <div class="mt-3 flex items-center text-sm">
+                <span class="text-emerald-600 font-medium flex items-center gap-1">
+                  <i class="fas fa-arrow-up text-xs"></i> 12.5%
+                </span>
+                <span class="text-slate-400 ml-2">vs mês anterior</span>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-slate-500">Total de Vendas</p>
+                  <p class="text-2xl font-bold text-slate-800 mt-1" id="kpi-vendas">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <i class="fas fa-shopping-bag text-blue-600 text-xl"></i>
+                </div>
+              </div>
+              <div class="mt-3 flex items-center text-sm">
+                <span class="text-emerald-600 font-medium flex items-center gap-1">
+                  <i class="fas fa-arrow-up text-xs"></i> 8.2%
+                </span>
+                <span class="text-slate-400 ml-2">vs mês anterior</span>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-slate-500">Clientes</p>
+                  <p class="text-2xl font-bold text-slate-800 mt-1" id="kpi-clientes">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center">
+                  <i class="fas fa-users text-violet-600 text-xl"></i>
+                </div>
+              </div>
+              <div class="mt-3 flex items-center text-sm">
+                <span class="text-emerald-600 font-medium flex items-center gap-1">
+                  <i class="fas fa-arrow-up text-xs"></i> 5.1%
+                </span>
+                <span class="text-slate-400 ml-2">novos este mês</span>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-slate-500">Produtos</p>
+                  <p class="text-2xl font-bold text-slate-800 mt-1" id="kpi-produtos">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
+                  <i class="fas fa-box-open text-amber-600 text-xl"></i>
+                </div>
+              </div>
+              <div class="mt-3 flex items-center text-sm">
+                <span class="text-slate-500 font-medium">12 em estoque baixo</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts + Best Client -->
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <!-- Sales Chart -->
+            <div class="xl:col-span-2 bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                <h3 class="font-semibold text-slate-800">Vendas por Período</h3>
+                <div class="flex gap-2">
+                  <button onclick="changeChartPeriod('day')" class="chart-period px-3 py-1.5 text-xs font-medium rounded-lg bg-primary-50 text-primary-700" data-period="day">Dia</button>
+                  <button onclick="changeChartPeriod('week')" class="chart-period px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:bg-slate-100" data-period="week">Semana</button>
+                  <button onclick="changeChartPeriod('month')" class="chart-period px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:bg-slate-100" data-period="month">Mês</button>
+                </div>
+              </div>
+              <div class="h-72">
+                <canvas id="salesChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Best Client -->
+            <div class="bg-gradient-to-br from-primary-600 to-primary-800 rounded-xl shadow-sm p-5 text-white relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+              <div class="relative">
+                <p class="text-primary-100 text-sm font-medium mb-4">Melhor Cliente</p>
+                <div class="flex items-center gap-4 mb-5">
+                  <img id="best-client-avatar" src="" alt="Avatar" class="w-16 h-16 rounded-full border-4 border-white/30 object-cover">
+                  <div>
+                    <h4 id="best-client-name" class="font-bold text-lg"></h4>
+                    <p class="text-primary-200 text-sm">Cliente VIP</p>
+                  </div>
+                </div>
+                <div class="space-y-3">
+                  <div class="flex justify-between text-sm">
+                    <span class="text-primary-100">Compras</span>
+                    <span id="best-client-compras" class="font-semibold"></span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-primary-100">Total Gasto</span>
+                    <span id="best-client-total" class="font-semibold"></span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-primary-100">Última compra</span>
+                    <span id="best-client-ultima" class="font-semibold"></span>
+                  </div>
+                  <div class="pt-2">
+                    <div class="flex items-center gap-1">
+                      <i class="fas fa-star text-amber-300"></i>
+                      <i class="fas fa-star text-amber-300"></i>
+                      <i class="fas fa-star text-amber-300"></i>
+                      <i class="fas fa-star text-amber-300"></i>
+                      <i class="fas fa-star text-amber-300"></i>
+                      <span class="ml-2 text-sm font-medium">Fidelidade Ouro</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Sales -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 class="font-semibold text-slate-800">Últimas Vendas</h3>
+              <button onclick="navigate('vendas')" class="text-sm text-primary-600 hover:text-primary-700 font-medium">Ver todas</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th class="text-left font-medium px-5 py-3">Código</th>
+                    <th class="text-left font-medium px-5 py-3">Cliente</th>
+                    <th class="text-left font-medium px-5 py-3">Produto</th>
+                    <th class="text-left font-medium px-5 py-3">Valor</th>
+                    <th class="text-left font-medium px-5 py-3">Data</th>
+                    <th class="text-left font-medium px-5 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-sales-body" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== CLIENTES ==================== -->
+        <div id="page-clientes" class="page hidden fade-in space-y-6">
+          
+          <!-- Header + Search -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-800">Gerenciamento de Clientes</h2>
+              <p class="text-sm text-slate-500">Gerencie todos os clientes da loja</p>
+            </div>
+            <div class="flex gap-3">
+              <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="text" id="search-clientes" placeholder="Buscar cliente..." 
+                       class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none w-full sm:w-64"
+                       oninput="filterClientes()">
+              </div>
+              <select id="filter-status-cliente" onchange="filterClientes()" class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500">
+                <option value="todos">Todos status</option>
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Best Client Card (mobile friendly) -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex flex-col sm:flex-row items-center gap-5">
+            <img id="best-client-avatar-2" src="" class="w-20 h-20 rounded-full object-cover border-4 border-primary-100">
+            <div class="flex-1 text-center sm:text-left">
+              <p class="text-xs font-medium text-primary-600 uppercase tracking-wide">Cliente Destaque</p>
+              <h3 id="best-client-name-2" class="text-xl font-bold text-slate-800 mt-1"></h3>
+              <div class="flex flex-wrap justify-center sm:justify-start gap-4 mt-2 text-sm text-slate-600">
+                <span><i class="fas fa-shopping-bag text-primary-500 mr-1"></i> <span id="best-client-compras-2"></span> compras</span>
+                <span><i class="fas fa-dollar-sign text-emerald-500 mr-1"></i> <span id="best-client-total-2"></span></span>
+                <span><i class="fas fa-calendar text-slate-400 mr-1"></i> Última: <span id="best-client-ultima-2"></span></span>
+              </div>
+            </div>
+            <div class="px-4 py-2 bg-amber-50 text-amber-700 rounded-full text-sm font-medium flex items-center gap-1">
+              <i class="fas fa-crown"></i> Fidelidade Ouro
+            </div>
+          </div>
+
+          <!-- Clients Table -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th class="text-left font-medium px-5 py-3">Cliente</th>
+                    <th class="text-left font-medium px-5 py-3">Contato</th>
+                    <th class="text-left font-medium px-5 py-3">Compras</th>
+                    <th class="text-left font-medium px-5 py-3">Total Gasto</th>
+                    <th class="text-left font-medium px-5 py-3">Última Compra</th>
+                    <th class="text-left font-medium px-5 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="clientes-body" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PRODUTOS ==================== -->
+        <div id="page-produtos" class="page hidden fade-in space-y-6">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-800">Catálogo de Produtos</h2>
+              <p class="text-sm text-slate-500">Gerencie o inventário da loja</p>
+            </div>
+            <button class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+              <i class="fas fa-plus"></i>
+              Adicionar Produto
+            </button>
+          </div>
+
+          <!-- Products Grid -->
+          <div id="produtos-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+        </div>
+
+        <!-- ==================== VENDAS ==================== -->
+        <div id="page-vendas" class="page hidden fade-in space-y-6">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-800">Histórico de Vendas</h2>
+              <p class="text-sm text-slate-500">Acompanhe todas as transações</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="text" id="search-vendas" placeholder="Buscar venda..." 
+                       class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none w-full sm:w-56"
+                       oninput="filterVendas()">
+              </div>
+              <select id="filter-status-venda" onchange="filterVendas()" class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm">
+                <option value="todos">Todos status</option>
+                <option value="pago">Pago</option>
+                <option value="pendente">Pendente</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th class="text-left font-medium px-5 py-3">Código</th>
+                    <th class="text-left font-medium px-5 py-3">Cliente</th>
+                    <th class="text-left font-medium px-5 py-3">Produto</th>
+                    <th class="text-left font-medium px-5 py-3">Valor</th>
+                    <th class="text-left font-medium px-5 py-3">Data</th>
+                    <th class="text-left font-medium px-5 py-3">Pagamento</th>
+                    <th class="text-left font-medium px-5 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="vendas-body" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // =====================================================
+    // DADOS MOCKADOS (prontos para substituir por API)
+    // =====================================================
+    const mockData = {
+      clientes: [
+        { id: 1, nome: "Ana Clara Mendes", email: "ana.mendes@email.com", telefone: "(11) 98765-4321", compras: 28, totalGasto: 18450.90, ultimaCompra: "2026-11-08", status: "ativo", avatar: "https://i.pravatar.cc/150?img=5" },
+        { id: 2, nome: "Bruno Oliveira Santos", email: "bruno.os@email.com", telefone: "(21) 99876-5432", compras: 15, totalGasto: 9230.50, ultimaCompra: "2026-11-05", status: "ativo", avatar: "https://i.pravatar.cc/150?img=12" },
+        { id: 3, nome: "Carla Regina Souza", email: "carla.rs@email.com", telefone: "(31) 97654-3210", compras: 9, totalGasto: 4870.00, ultimaCompra: "2026-10-28", status: "ativo", avatar: "https://i.pravatar.cc/150?img=9" },
+        { id: 4, nome: "Diego Ferreira Lima", email: "diego.fl@email.com", telefone: "(41) 96543-2109", compras: 4, totalGasto: 1890.75, ultimaCompra: "2026-09-15", status: "inativo", avatar: "https://i.pravatar.cc/150?img=15" },
+        { id: 5, nome: "Elena Costa Ribeiro", email: "elena.cr@email.com", telefone: "(51) 95432-1098", compras: 22, totalGasto: 15680.30, ultimaCompra: "2026-11-10", status: "ativo", avatar: "https://i.pravatar.cc/150?img=20" },
+        { id: 6, nome: "Fábio Martins Rocha", email: "fabio.mr@email.com", telefone: "(61) 94321-0987", compras: 7, totalGasto: 3450.00, ultimaCompra: "2026-10-20", status: "ativo", avatar: "https://i.pravatar.cc/150?img=33" },
+        { id: 7, nome: "Gabriela Alves Pinto", email: "gabriela.ap@email.com", telefone: "(71) 93210-9876", compras: 3, totalGasto: 980.50, ultimaCompra: "2026-08-12", status: "inativo", avatar: "https://i.pravatar.cc/150?img=25" },
+        { id: 8, nome: "Henrique Silva Nunes", email: "henrique.sn@email.com", telefone: "(81) 92109-8765", compras: 18, totalGasto: 11240.80, ultimaCompra: "2026-11-09", status: "ativo", avatar: "https://i.pravatar.cc/150?img=52" }
+      ],
+      
+      produtos: [
+        { id: 1, nome: "Notebook Pro 15\"", descricao: "Intel i7, 16GB RAM, SSD 512GB", preco: 4599.90, estoque: 23, categoria: "Eletrônicos", status: "ativo", imagem: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=300&fit=crop" },
+        { id: 2, nome: "Smartphone X20", descricao: "128GB, 6.7\" AMOLED, 5G", preco: 2899.00, estoque: 45, categoria: "Eletrônicos", status: "ativo", imagem: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=300&fit=crop" },
+        { id: 3, nome: "Fone Bluetooth Elite", descricao: "Cancelamento de ruído ativo", preco: 649.90, estoque: 78, categoria: "Acessórios", status: "ativo", imagem: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop" },
+        { id: 4, nome: "Monitor UltraWide 34\"", descricao: "QHD, 144Hz, HDR", preco: 2199.00, estoque: 12, categoria: "Eletrônicos", status: "ativo", imagem: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400&h=300&fit=crop" },
+        { id: 5, nome: "Teclado Mecânico RGB", descricao: "Switch blue, layout ABNT2", preco: 389.90, estoque: 56, categoria: "Acessórios", status: "ativo", imagem: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400&h=300&fit=crop" },
+        { id: 6, nome: "Mouse Gamer Pro", descricao: "16000 DPI, 8 botões", preco: 249.90, estoque: 0, categoria: "Acessórios", status: "inativo", imagem: "https://images.unsplash.com/photo-1527814050087-3793815479db?w=400&h=300&fit=crop" },
+        { id: 7, nome: "Webcam 4K Ultra", descricao: "Autofoco, microfone embutido", preco: 499.00, estoque: 34, categoria: "Eletrônicos", status: "ativo", imagem: "https://images.unsplash.com/photo-1587825140708-df876c12b44e?w=400&h=300&fit=crop" },
+        { id: 8, nome: "Cadeira Ergonômica", descricao: "Ajuste lombar, apoio de braço", preco: 1299.00, estoque: 8, categoria: "Móveis", status: "ativo", imagem: "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=400&h=300&fit=crop" }
+      ],
+      
+      vendas: [
+        { id: "VD-10482", cliente: "Ana Clara Mendes", produto: "Notebook Pro 15\"", valor: 4599.90, data: "2026-11-10", pagamento: "Cartão de Crédito", status: "pago" },
+        { id: "VD-10481", cliente: "Elena Costa Ribeiro", produto: "Smartphone X20", valor: 2899.00, data: "2026-11-10", pagamento: "PIX", status: "pago" },
+        { id: "VD-10480", cliente: "Henrique Silva Nunes", produto: "Fone Bluetooth Elite", valor: 649.90, data: "2026-11-09", pagamento: "Cartão de Débito", status: "pago" },
+        { id: "VD-10479", cliente: "Bruno Oliveira Santos", produto: "Monitor UltraWide 34\"", valor: 2199.00, data: "2026-11-08", pagamento: "Boleto", status: "pendente" },
+        { id: "VD-10478", cliente: "Ana Clara Mendes", produto: "Teclado Mecânico RGB", valor: 389.90, data: "2026-11-08", pagamento: "PIX", status: "pago" },
+        { id: "VD-10477", cliente: "Carla Regina Souza", produto: "Webcam 4K Ultra", valor: 499.00, data: "2026-11-07", pagamento: "Cartão de Crédito", status: "pago" },
+        { id: "VD-10476", cliente: "Fábio Martins Rocha", produto: "Cadeira Ergonômica", valor: 1299.00, data: "2026-11-06", pagamento: "Cartão de Crédito", status: "pago" },
+        { id: "VD-10475", cliente: "Diego Ferreira Lima", produto: "Mouse Gamer Pro", valor: 249.90, data: "2026-11-05", pagamento: "PIX", status: "cancelado" },
+        { id: "VD-10474", cliente: "Elena Costa Ribeiro", produto: "Notebook Pro 15\"", valor: 4599.90, data: "2026-11-04", pagamento: "Cartão de Crédito", status: "pago" },
+        { id: "VD-10473", cliente: "Bruno Oliveira Santos", produto: "Smartphone X20", valor: 2899.00, data: "2026-11-03", pagamento: "PIX", status: "pago" }
+      ]
+    };
+
+    // =====================================================
+    // UTILITÁRIOS
+    // =====================================================
+    const formatCurrency = (value) => {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    };
+
+    const formatDate = (dateStr) => {
+      const [y, m, d] = dateStr.split('-');
+      return `${d}/${m}/${y}`;
+    };
+
+    const getStatusBadge = (status) => {
+      const map = {
+        ativo: 'bg-emerald-50 text-emerald-700',
+        inativo: 'bg-slate-100 text-slate-600',
+        pago: 'bg-emerald-50 text-emerald-700',
+        pendente: 'bg-amber-50 text-amber-700',
+        cancelado: 'bg-red-50 text-red-700'
+      };
+      const labels = {
+        ativo: 'Ativo', inativo: 'Inativo',
+        pago: 'Pago', pendente: 'Pendente', cancelado: 'Cancelado'
+      };
+      return `<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${map[status] || 'bg-slate-100'}">${labels[status] || status}</span>`;
+    };
+
+    // =====================================================
+    // NAVEGAÇÃO
+    // =====================================================
+    function navigate(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+      document.getElementById(`page-${page}`).classList.remove('hidden');
+      
+      document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.classList.remove('bg-primary-600', 'text-white');
+        btn.classList.add('text-slate-300', 'hover:bg-slate-800', 'hover:text-white');
+      });
+      const activeBtn = document.querySelector(`[data-page="${page}"]`);
+      activeBtn.classList.remove('text-slate-300', 'hover:bg-slate-800', 'hover:text-white');
+      activeBtn.classList.add('bg-primary-600', 'text-white');
+      
+      const titles = { dashboard: 'Dashboard', clientes: 'Clientes', produtos: 'Produtos', vendas: 'Vendas' };
+      document.getElementById('pageTitle').textContent = titles[page];
+      
+      // Fecha sidebar no mobile
+      if (window.innerWidth < 1024) {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+      }
+    }
+
+    // =====================================================
+    // DASHBOARD
+    // =====================================================
+    function renderDashboard() {
+      const totalFaturamento = mockData.vendas
+        .filter(v => v.status === 'pago')
+        .reduce((acc, v) => acc + v.valor, 0);
+      
+      document.getElementById('kpi-faturamento').textContent = formatCurrency(totalFaturamento);
+      document.getElementById('kpi-vendas').textContent = mockData.vendas.length;
+      document.getElementById('kpi-clientes').textContent = mockData.clientes.length;
+      document.getElementById('kpi-produtos').textContent = mockData.produtos.filter(p => p.status === 'ativo').length;
+
+      // Melhor cliente
+      const melhor = [...mockData.clientes].sort((a, b) => b.totalGasto - a.totalGasto)[0];
+      document.getElementById('best-client-avatar').src = melhor.avatar;
+      document.getElementById('best-client-name').textContent = melhor.nome;
+      document.getElementById('best-client-compras').textContent = melhor.compras;
+      document.getElementById('best-client-total').textContent = formatCurrency(melhor.totalGasto);
+      document.getElementById('best-client-ultima').textContent = formatDate(melhor.ultimaCompra);
+
+      // Também na página de clientes
+      document.getElementById('best-client-avatar-2').src = melhor.avatar;
+      document.getElementById('best-client-name-2').textContent = melhor.nome;
+      document.getElementById('best-client-compras-2').textContent = melhor.compras;
+      document.getElementById('best-client-total-2').textContent = formatCurrency(melhor.totalGasto);
+      document.getElementById('best-client-ultima-2').textContent = formatDate(melhor.ultimaCompra);
+
+      // Últimas vendas
+      const tbody = document.getElementById('recent-sales-body');
+      tbody.innerHTML = mockData.vendas.slice(0, 5).map(v => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 font-medium text-slate-700">${v.id}</td>
+          <td class="px-5 py-3">${v.cliente}</td>
+          <td class="px-5 py-3 text-slate-600">${v.produto}</td>
+          <td class="px-5 py-3 font-medium">${formatCurrency(v.valor)}</td>
+          <td class="px-5 py-3 text-slate-500">${formatDate(v.data)}</td>
+          <td class="px-5 py-3">${getStatusBadge(v.status)}</td>
+        </tr>
+      `).join('');
+
+      initChart('day');
+    }
+
+    // =====================================================
+    // GRÁFICO
+    // =====================================================
+    let salesChart = null;
+
+    const chartData = {
+      day: {
+        labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+        data: [4200, 5100, 3800, 6200, 7100, 5400, 4800]
+      },
+      week: {
+        labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+        data: [18500, 22300, 19800, 25600]
+      },
+      month: {
+        labels: ['Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov'],
+        data: [42000, 48500, 51200, 47800, 56300, 61200]
+      }
+    };
+
+    function initChart(period) {
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      if (salesChart) salesChart.destroy();
+
+      salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData[period].labels,
+          datasets: [{
+            label: 'Faturamento (R$)',
+            data: chartData[period].data,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.08)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#3b82f6',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1e293b',
+              titleFont: { size: 13 },
+              bodyFont: { size: 13 },
+              padding: 12,
+              cornerRadius: 8,
+              callbacks: {
+                label: (ctx) => formatCurrency(ctx.raw)
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8', font: { size: 12 } }
+            },
+            y: {
+              grid: { color: '#f1f5f9' },
+              ticks: {
+                color: '#94a3b8',
+                font: { size: 12 },
+                callback: (v) => 'R$ ' + (v / 1000) + 'k'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function changeChartPeriod(period) {
+      document.querySelectorAll('.chart-period').forEach(btn => {
+        btn.classList.remove('bg-primary-50', 'text-primary-700');
+        btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+      });
+      const active = document.querySelector(`[data-period="${period}"]`);
+      active.classList.add('bg-primary-50', 'text-primary-700');
+      active.classList.remove('text-slate-600', 'hover:bg-slate-100');
+      initChart(period);
+    }
+
+    // =====================================================
+    // CLIENTES
+    // =====================================================
+    function renderClientes(list = mockData.clientes) {
+      const tbody = document.getElementById('clientes-body');
+      tbody.innerHTML = list.map(c => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3">
+            <div class="flex items-center gap-3">
+              <img src="${c.avatar}" class="w-9 h-9 rounded-full object-cover">
+              <div>
+                <p class="font-medium text-slate-800">${c.nome}</p>
+                <p class="text-xs text-slate-500">ID #${c.id}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-3">
+            <p class="text-slate-700">${c.email}</p>
+            <p class="text-xs text-slate-500">${c.telefone}</p>
+          </td>
+          <td class="px-5 py-3 font-medium">${c.compras}</td>
+          <td class="px-5 py-3 font-medium text-emerald-600">${formatCurrency(c.totalGasto)}</td>
+          <td class="px-5 py-3 text-slate-500">${formatDate(c.ultimaCompra)}</td>
+          <td class="px-5 py-3">${getStatusBadge(c.status)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function filterClientes() {
+      const search = document.getElementById('search-clientes').value.toLowerCase();
+      const status = document.getElementById('filter-status-cliente').value;
+      
+      let filtered = mockData.clientes.filter(c => {
+        const matchSearch = c.nome.toLowerCase().includes(search) || c.email.toLowerCase().includes(search);
+        const matchStatus = status === 'todos' || c.status === status;
+        return matchSearch && matchStatus;
+      });
+      renderClientes(filtered);
+    }
+
+    // =====================================================
+    // PRODUTOS
+    // =====================================================
+    function renderProdutos() {
+      const grid = document.getElementById('produtos-grid');
+      grid.innerHTML = mockData.produtos.map(p => `
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden card-hover group">
+          <div class="relative h-44 overflow-hidden">
+            <img src="${p.imagem}" alt="${p.nome}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <div class="absolute top-3 right-3">${getStatusBadge(p.status)}</div>
+          </div>
+          <div class="p-4">
+            <p class="text-xs font-medium text-primary-600 mb-1">${p.categoria}</p>
+            <h3 class="font-semibold text-slate-800 truncate">${p.nome}</h3>
+            <p class="text-sm text-slate-500 mt-1 line-clamp-2">${p.descricao}</p>
+            <div class="mt-3 flex items-center justify-between">
+              <span class="text-lg font-bold text-slate-800">${formatCurrency(p.preco)}</span>
+              <span class="text-xs text-slate-500">Estoque: <strong class="${p.estoque < 10 ? 'text-red-500' : 'text-slate-700'}">${p.estoque}</strong></span>
+            </div>
+            <div class="mt-4 flex gap-2">
+              <button class="flex-1 py-2 text-sm font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors">
+                <i class="fas fa-pen mr-1"></i> Editar
+              </button>
+              <button class="py-2 px-3 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // =====================================================
+    // VENDAS
+    // =====================================================
+    function renderVendas(list = mockData.vendas) {
+      const tbody = document.getElementById('vendas-body');
+      tbody.innerHTML = list.map(v => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 font-medium text-slate-700">${v.id}</td>
+          <td class="px-5 py-3">${v.cliente}</td>
+          <td class="px-5 py-3 text-slate-600">${v.produto}</td>
+          <td class="px-5 py-3 font-medium">${formatCurrency(v.valor)}</td>
+          <td class="px-5 py-3 text-slate-500">${formatDate(v.data)}</td>
+          <td class="px-5 py-3 text-slate-600">${v.pagamento}</td>
+          <td class="px-5 py-3">${getStatusBadge(v.status)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function filterVendas() {
+      const search = document.getElementById('search-vendas').value.toLowerCase();
+      const status = document.getElementById('filter-status-venda').value;
+      
+      let filtered = mockData.vendas.filter(v => {
+        const matchSearch = v.id.toLowerCase().includes(search) || 
+                            v.cliente.toLowerCase().includes(search) || 
+                            v.produto.toLowerCase().includes(search);
+        const matchStatus = status === 'todos' || v.status === status;
+        return matchSearch && matchStatus;
+      });
+      renderVendas(filtered);
+    }
+
+    // =====================================================
+    // INIT
+    // =====================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      renderDashboard();
+      renderClientes();
+      renderProdutos();
+      renderVendas();
+
+      // Mobile menu toggle
+      document.getElementById('menuToggle').addEventListener('click', () => {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('-translate-x-full');
+      });
+
+      // Fecha sidebar ao clicar fora (mobile)
+      document.addEventListener('click', (e) => {
+        const sidebar = document.getElementById('sidebar');
+        const toggle = document.getElementById('menuToggle');
+        if (window.innerWidth < 1024 && 
+            !sidebar.contains(e.target) && 
+            !toggle.contains(e.target) &&
+            !sidebar.classList.contains('-translate-x-full')) {
+          sidebar.classList.add('-translate-x-full');
+        }
+      });
+
+      // Sidebar mobile inicial
+      if (window.innerWidth < 1024) {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+      }
+    });
+  </script>
+</body>
+</html>
